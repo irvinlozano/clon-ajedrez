@@ -1,0 +1,46 @@
+{
+  "perdida_real": 45.7,
+  "tabla": [
+    {
+      "temperatura": 0,
+      "perdida_cp_clon": 18.7,
+      "acierto": 0.556
+    },
+    {
+      "temperatura": 0.25,
+      "perdida_cp_clon": 21.0,
+      "acierto": 0.539
+    },
+    {
+      "temperatura": 0.5,
+      "perdida_cp_clon": 27.6,
+      "acierto": 0.508
+    },
+    {
+      "temperatura": 0.75,
+      "perdida_cp_clon": 38.3,
+      "acierto": 0.46
+    },
+    {
+      "temperatura": 1.0,
+      "perdida_cp_clon": 48.8,
+      "acierto": 0.417
+    },
+    {
+      "temperatura": 1.25,
+      "perdida_cp_clon": 61.0,
+      "acierto": 0.371
+    },
+    {
+      "temperatura": 1.5,
+      "perdida_cp_clon": 71.6,
+      "acierto": 0.34
+    },
+    {
+      "temperatura": 2.0,
+      "perdida_cp_clon": 89.4,
+      "acierto": 0.295
+    }
+  ],
+  "recomendada": 1.0
+}

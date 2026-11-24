@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clon de Irvin</title>
+<style>
+  :root { --bg:#f4f1ea; --panel:#fff; --txt:#222; --sub:#666; --acento:#4a7bd0; --libro:#2e9d5b;
+          --claro:#eeeed2; --oscuro:#769656; --sel:#f6f669; --ult:#baca44; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, "Segoe UI", sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:14px 20px; font-size:20px; font-weight:600; }
+  header span { font-weight:400; color:var(--sub); font-size:14px; margin-left:8px; }
+  main { display:flex; gap:20px; padding:0 20px 20px; flex-wrap:wrap; align-items:flex-start; }
+  #tablero { width:min(560px, 92vw); aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
+             border-radius:6px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.2); user-select:none; }
+  .c { position:relative; display:flex; align-items:center; justify-content:center; cursor:pointer;
+       font-size:min(54px, 9vw); line-height:1; }
+  .c.claro { background:var(--claro); } .c.oscuro { background:var(--oscuro); }
+  .c.ult { background:var(--ult); } .c.sel { background:var(--sel); }
+  .c.dest::after { content:""; position:absolute; width:28%; height:28%; border-radius:50%; background:rgba(0,0,0,.22); }
+  .c.dest.ocupada::after { width:86%; height:86%; background:none; border:5px solid rgba(0,0,0,.22); }
+  .c .coord { position:absolute; font-size:11px; font-weight:600; opacity:.7; }
+  .c .fila { top:2px; left:3px; } .c .col { bottom:1px; right:4px; }
+  .p.w { color:#fff; text-shadow: 0 0 2px #000, 0 0 1px #000, 1px 1px 0 #000, -1px -1px 0 #000; }
+  .p.b { color:#111; }
+  .panel { background:var(--panel); border-radius:10px; padding:14px 16px; min-width:280px; flex:1; max-width:420px;
+           box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  button, select { font-size:14px; padding:6px 10px; border-radius:6px; border:1px solid #bbb; background:#fafafa; cursor:pointer; }
+  #estado { margin:10px 0; font-weight:600; }
+  .etiqueta { display:inline-block; padding:2px 8px; border-radius:10px; color:#fff; font-size:12px; }
+  .libro { background:var(--libro); } .modelo { background:var(--acento); }
+  .barra { display:flex; align-items:center; gap:8px; margin:4px 0; font-size:14px; }
+  .barra .n { width:60px; font-family: ui-monospace, monospace; }
+  .barra .b { height:12px; background:var(--acento); border-radius:3px; }
+  .barra.jugada .n { font-weight:700; }
+  #historial { font-family: ui-monospace, monospace; font-size:13px; max-height:200px; overflow:auto; color:#444; line-height:1.6; }
+  h3 { font-size:13px; margin:14px 0 6px; color:var(--sub); text-transform:uppercase; letter-spacing:.04em; }
+</style>
+</head>
+<body>
+<header>♟ Clon de Irvin <span>bot entrenado con ~5,000 partidas rapid de chess.com</span></header>
+<main>
+  <div id="tablero"></div>
+  <div class="panel">
+    <div>
+      Juegas con
+      <select id="color"><option value="w">blancas</option><option value="b">negras</option></select>
+      <button id="nueva">Nueva partida</button>
+      <button id="deshacer">Deshacer</button>
+    </div>
+    <div id="estado">Cargando…</div>
+    <h3>Última jugada del clon</h3>
+    <div id="origen">—</div>
+    <div id="opciones"></div>
+    <h3>Partida</h3>
+    <div id="historial"></div>
+  </div>
+</main>
+<script>
+const GLIFO = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' };
+let moves = [], est = null, miColor = 'w', sel = null, pensando = false;
+
+async function cargar() {
+  est = await (await fetch('/estado?moves=' + moves.join(','))).json();
+  dibujar();
+}
+
+function dibujar() {
+  const t = document.getElementById('tablero');
+  t.innerHTML = '';
+  const filas = miColor === 'w' ? [8,7,6,5,4,3,2,1] : [1,2,3,4,5,6,7,8];
+  const cols = miColor === 'w' ? 'abcdefgh' : 'hgfedcba';
+  const destinos = sel ? est.legales.filter(m => m.uci.startsWith(sel)).map(m => m.uci.slice(2, 4)) : [];
+  filas.forEach((f, i) => [...cols].forEach((c, j) => {
+    const sq = c + f, div = document.createElement('div');
+    const claro = ('abcdefgh'.indexOf(c) + f) % 2 === 1;
+    div.className = 'c ' + (claro ? 'claro' : 'oscuro');
+    if (est.ultima && (est.ultima.slice(0,2) === sq || est.ultima.slice(2,4) === sq)) div.classList.add('ult');
+    if (sel === sq) div.classList.add('sel');
+    const p = est.piezas[sq];
+    if (destinos.includes(sq)) div.classList.add('dest');
+    if (p) {
+      if (destinos.includes(sq)) div.classList.add('ocupada');
+      const s = document.createElement('span');
+      s.className = 'p ' + (p === p.toUpperCase() ? 'w' : 'b');
+      s.textContent = GLIFO[p.toLowerCase()];
+      div.appendChild(s);
+    }
+    if (j === 0) div.insertAdjacentHTML('beforeend', `<span class="coord fila">${f}</span>`);
+    if (i === 7) div.insertAdjacentHTML('beforeend', `<span class="coord col">${c}</span>`);
+    div.onclick = () => clic(sq);
+    t.appendChild(div);
+  }));
+  // estado
+  let e;
+  if (est.fin) e = est.fin.ganador === null ? 'Tablas (' + est.fin.motivo + ')'
+                 : (est.fin.ganador === miColor ? '¡Ganaste!' : 'Ganó el clon') + ' (' + est.fin.motivo + ')';
+  else e = pensando ? 'El clon está pensando…' : (est.turno === miColor ? 'Tu turno' : 'Turno del clon');
+  if (est.jaque && !est.fin) e += ' · jaque';
+  document.getElementById('estado').textContent = e;
+  let h = '';
+  est.sans.forEach((s, i) => { if (i % 2 === 0) h += `${i / 2 + 1}. `; h += s + ' '; });
+  document.getElementById('historial').textContent = h;
+}
+
+function clic(sq) {
+  if (pensando || est.fin || est.turno !== miColor) return;
+  const p = est.piezas[sq];
+  if (sel) {
+    let cand = est.legales.filter(m => m.uci.slice(0,2) === sel && m.uci.slice(2,4) === sq);
+    if (cand.length) {
+      const m = cand.find(x => x.uci.length === 4 || x.uci[4] === 'q');  // promoción: dama
+      sel = null;
+      moves.push(m.uci);
+      cargar().then(turnoClon);
+      return;
+    }
+  }
+  const mia = p && ((p === p.toUpperCase()) === (miColor === 'w'));
+  sel = mia && sel !== sq ? sq : null;
+  dibujar();
+}
+
+async function turnoClon() {
+  if (est.fin || est.turno === miColor) return;
+  pensando = true; dibujar();
+  try {
+    const r = await (await fetch('/jugada?moves=' + moves.join(','))).json();
+    if (!r.fin) { moves.push(r.uci); mostrarOpciones(r); }
+  } finally { pensando = false; await cargar(); }
+}
+
+function mostrarOpciones(r) {
+  const txt = r.origen === 'libro'
+    ? '<span class="etiqueta libro">libro</span> así abres tú en tus partidas'
+    : '<span class="etiqueta modelo">modelo</span> probabilidad de que tú la juegues';
+  document.getElementById('origen').innerHTML = 'Jugó <b>' + r.san + '</b> &nbsp;' + txt;
+  document.getElementById('opciones').innerHTML = r.opciones.map(o =>
+    `<div class="barra ${o.uci === r.uci ? 'jugada' : ''}"><span class="n">${o.san}</span>
+     <span class="b" style="width:${Math.max(2, o.p * 220)}px"></span><span>${(o.p * 100).toFixed(0)}%</span></div>`).join('');
+}
+
+document.getElementById('nueva').onclick = async () => {
+  miColor = document.getElementById('color').value;
+  moves = []; sel = null;
+  document.getElementById('origen').textContent = '—';
+  document.getElementById('opciones').innerHTML = '';
+  await cargar();
+  turnoClon();
+};
+document.getElementById('deshacer').onclick = async () => {
+  if (pensando) return;
+  moves.pop();
+  if (moves.length % 2 !== (miColor === 'w' ? 0 : 1)) moves.pop();
+  sel = null; await cargar();
+};
+cargar();
+</script>
+</body>
+</html>

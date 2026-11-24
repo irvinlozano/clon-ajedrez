@@ -1,0 +1,32 @@
+{
+  "modelo": 0.4507563184598606,
+  "modelo_top3": 0.6860448575086538,
+  "clon (libro+modelo)": 0.4565887429465598,
+  "stockfish": 0.3202143297453649,
+  "azar entre candidatas": 0.12553904201919755,
+  "techo (tu jugada estaba en el top)": 0.810801839821708,
+  "en_libro": 0.1157001280288302,
+  "por_fase": {
+    "apertura (jugadas 1-10)": {
+      "modelo": 0.492,
+      "clon": 0.51,
+      "stockfish": 0.25
+    },
+    "final (31+)": {
+      "modelo": 0.452,
+      "clon": 0.452,
+      "stockfish": 0.38
+    },
+    "medio juego (11-30)": {
+      "modelo": 0.42,
+      "clon": 0.42,
+      "stockfish": 0.341
+    }
+  },
+  "perdida_cp_promedio": {
+    "tu (real)": 45.6709749108135,
+    "clon (mismas posiciones)": 18.666471723492602,
+    "stockfish": 0.0
+  },
+  "posiciones_test": 21089
+}
